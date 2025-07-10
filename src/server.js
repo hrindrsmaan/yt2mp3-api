@@ -2,21 +2,31 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import ytdl from "@distube/ytdl-core";
+import rateLimit from "express-rate-limit";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Security & utility middleware
 app.use(helmet());
-
 app.use(cors());
-
 app.use(express.json());
+
+// Rate limiter middleware for download endpoint
+const downloadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: {
+    success: false,
+    error: "Too many download requests from this IP, please try again later.",
+  },
+});
 
 app.get("/", (req, res) => {
   res.send("YouTube Downloader Backend is running!");
 });
 
-app.post("/api/download", async (req, res) => {
+app.post("/api/download", downloadLimiter, async (req, res) => {
   const { url, formatType = "mp4" } = req.body;
 
   if (!url || !ytdl.validateURL(url)) {
@@ -27,18 +37,6 @@ app.post("/api/download", async (req, res) => {
   }
 
   try {
-    const commonReqOpts = {
-      requestOptions: {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) " +
-            "Chrome/114.0.0.0 Safari/537.36",
-          "Accept-Language": "en-US,en;q=0.9",
-          Referer: `https://www.youtube.com/watch?v=${ytdl.getVideoID(url)}`,
-        },
-      },
-    };
     const info = await ytdl.getInfo(url);
     const videoTitle = info.videoDetails.title
       .replace(/[^\x00-\x7F]/g, "")
@@ -85,6 +83,13 @@ app.post("/api/download", async (req, res) => {
       ytdl(url, { format: finalFormat }).pipe(res);
     }
   } catch (error) {
+    // Handle 429 errors from YouTube specifically
+    if (error.status === 429) {
+      return res.status(429).json({
+        success: false,
+        error: "YouTube is rate-limiting requests. Please try again later.",
+      });
+    }
     console.error("Error in API route:", error.message);
     res.status(500).json({
       success: false,
