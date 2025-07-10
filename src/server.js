@@ -39,7 +39,7 @@ app.post("/api/download", async (req, res) => {
         },
       },
     };
-    const info = await ytdl.getInfo(url, commonReqOpts);
+    const info = await ytdl.getInfo(url);
     const videoTitle = info.videoDetails.title
       .replace(/[^\x00-\x7F]/g, "")
       .replace(/[\\/:*?"<>|]/g, "");
