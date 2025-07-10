@@ -1,15 +1,8 @@
-// Security best practice: load proxy credentials from environment variables
-
-// Disable ytdl-core update checks
-process.env.YTDL_NO_UPDATE = "1";
-
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import ytdl from "@distube/ytdl-core";
 import rateLimit from "express-rate-limit";
-import { ProxyAgent } from "undici";
-import { HttpsProxyAgent } from "https-proxy-agent";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -21,16 +14,7 @@ if (!oxylabsUsername || !oxylabsPassword) {
   throw new Error("Proxy credentials are not set in environment variables.");
 }
 
-// Encode credentials safely
-const username = encodeURIComponent(
-  "customer-hxmaan_fPQba-sessid-0706601956-sesstime-10"
-);
-const password = encodeURIComponent("H+r1ndersingh");
-
-// Now build the proxy URL
-const proxyUrl = `http://${username}:${password}@pr.oxylabs.io:7777`;
-
-//const proxyAgent = new HttpsProxyAgent(proxyUrl);
+const proxyUrl = `https://customer-${oxylabsUsername}-sessid-0469279611-sesstime-10:${oxylabsPassword}@pr.oxylabs.io:7777`;
 
 const proxyAgent = ytdl.createProxyAgent({ uri: proxyUrl });
 
@@ -38,20 +22,20 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-const downloadLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: {
-    success: false,
-    error: "Too many download requests from this IP, please try again later.",
-  },
-});
+// const downloadLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 10,
+//   message: {
+//     success: false,
+//     error: "Too many download requests from this IP, please try again later.",
+//   },
+// });
 
 app.get("/", (req, res) => {
   res.send("YouTube Downloader Backend is running!");
 });
 
-app.post("/api/download", downloadLimiter, async (req, res) => {
+app.post("/api/download", async (req, res) => {
   const { url, formatType = "mp4" } = req.body;
 
   if (!url || !ytdl.validateURL(url)) {
