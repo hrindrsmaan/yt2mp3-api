@@ -32,7 +32,7 @@ const proxyUrl = `http://${username}:${password}@pr.oxylabs.io:7777`;
 
 const proxyAgent = new HttpsProxyAgent(proxyUrl);
 
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
