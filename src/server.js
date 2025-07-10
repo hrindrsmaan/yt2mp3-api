@@ -6,6 +6,7 @@ import rateLimit from "express-rate-limit";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+app.set("trust proxy", true); // Trust all proxies (use with caution)
 
 // Security & utility middleware
 app.use(helmet());
