@@ -9,6 +9,7 @@ import helmet from "helmet";
 import ytdl from "@distube/ytdl-core";
 import rateLimit from "express-rate-limit";
 import { ProxyAgent } from "undici";
+import { HttpsProxyAgent } from "https-proxy-agent";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
