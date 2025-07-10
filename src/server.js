@@ -14,7 +14,7 @@ if (!oxylabsUsername || !oxylabsPassword) {
   throw new Error("Proxy credentials are not set in environment variables.");
 }
 
-const proxyUrl = `https://customer-${oxylabsUsername}-sessid-0469279611-sesstime-10:${oxylabsPassword}@pr.oxylabs.io:7777`;
+const proxyUrl = `http://customer-${oxylabsUsername}-sessid-0469279611-sesstime-10:${oxylabsPassword}@pr.oxylabs.io:7777`;
 
 const proxyAgent = ytdl.createProxyAgent({ uri: proxyUrl });
 
