@@ -20,7 +20,7 @@ if (!oxylabsUsername || !oxylabsPassword) {
   throw new Error("Proxy credentials are not set in environment variables.");
 }
 
-const proxyUrl = `http://${oxylabsUsername}:${oxylabsPassword}@pr.oxylabs.io:7777`;
+const proxyUrl = `https://customer-hxmaan_fPQba:H+r1ndersingh@pr.oxylabs.io:7777`;
 const proxyAgent = new ProxyAgent(proxyUrl);
 
 app.set("trust proxy", 1);
