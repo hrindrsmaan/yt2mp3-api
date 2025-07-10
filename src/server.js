@@ -30,9 +30,10 @@ const password = encodeURIComponent("H+r1ndersingh");
 // Now build the proxy URL
 const proxyUrl = `http://${username}:${password}@pr.oxylabs.io:7777`;
 
-const proxyAgent = new HttpsProxyAgent(proxyUrl);
+//const proxyAgent = new HttpsProxyAgent(proxyUrl);
 
-app.set("trust proxy", true);
+const proxyAgent = ytdl.createProxyAgent({ uri: proxyUrl });
+
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
@@ -61,7 +62,7 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
   }
 
   try {
-    const info = await ytdl.getInfo(url, { client: proxyAgent });
+    const info = await ytdl.getInfo(url, { agent: proxyAgent });
     const videoTitle = info.videoDetails.title
       .replace(/[^\x00-\x7F]/g, "")
       .replace(/[\\/:*?"<>|]/g, "");
@@ -111,7 +112,7 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
       res.setHeader("Content-Type", "video/mp4");
       ytdl(url, {
         format: finalFormat,
-        client: proxyAgent,
+        agent: proxyAgent,
       }).pipe(res);
     }
   } catch (error) {
