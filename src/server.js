@@ -88,8 +88,7 @@ app.post("/api/download", async (req, res) => {
     console.error("Error in API route:", error.message);
     res.status(500).json({
       success: false,
-      error:
-        "Failed to process the video. It may be private, age-restricted, or unavailable.",
+      error: error.message,
     });
   }
 });
