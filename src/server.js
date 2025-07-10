@@ -4,7 +4,7 @@ import helmet from "helmet";
 import ytdl from "@distube/ytdl-core";
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 8080;
 
 app.use(helmet());
 
