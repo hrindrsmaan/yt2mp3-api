@@ -1,22 +1,27 @@
+// Disable ytdl-core update checks
+process.env.YTDL_NO_UPDATE = "1";
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import ytdl from "@distube/ytdl-core";
 import rateLimit from "express-rate-limit";
+// import fs from "fs"; // Uncomment if you want to load cookies from a file
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-app.set("trust proxy", true); // Trust all proxies (use with caution)
 
-// Security & utility middleware
+// Trust first proxy (for correct IP detection behind load balancers)
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Rate limiter middleware for download endpoint
+// Rate limiter for download endpoint
 const downloadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // limit each IP to 10 requests per windowMs
+  max: 10, // limit each IP to 10 requests per window
   message: {
     success: false,
     error: "Too many download requests from this IP, please try again later.",
@@ -38,7 +43,26 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
   }
 
   try {
+    // === Proxy and/or Cookies Support (Uncomment and configure as needed) ===
+    // const agent = ytdl.createProxyAgent({ uri: "http://my.proxy.server:8080" });
+    // const cookies = [
+    //   { name: "cookie1", value: "COOKIE1_HERE" },
+    //   // ...more cookies as needed
+    // ];
+    // const agent = ytdl.createAgent(cookies); // For cookies only
+    // Or combine proxy and cookies:
+    // const agent = ytdl.createProxyAgent({ uri: "http://my.proxy.server:8080" }, cookies);
+
+    // To load cookies from a file (cookies.json):
+    // const cookies = JSON.parse(fs.readFileSync("cookies.json"));
+    // const agent = ytdl.createAgent(cookies);
+
+    // Use agent in getInfo if you set it up above:
+    // const info = await ytdl.getInfo(url, { agent });
+
+    // Default: no proxy/cookies
     const info = await ytdl.getInfo(url);
+
     const videoTitle = info.videoDetails.title
       .replace(/[^\x00-\x7F]/g, "")
       .replace(/[\\/:*?"<>|]/g, "");
@@ -49,9 +73,10 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
         quality: "highestaudio",
       });
       if (!audioFormat) {
-        return res
-          .status(404)
-          .json({ success: false, error: "No audio-only format found." });
+        return res.status(404).json({
+          success: false,
+          error: "No audio-only format found.",
+        });
       }
       res.setHeader(
         "Content-Disposition",
@@ -72,9 +97,10 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
         });
       }
       if (!finalFormat) {
-        return res
-          .status(404)
-          .json({ success: false, error: "No downloadable MP4 format found." });
+        return res.status(404).json({
+          success: false,
+          error: "No downloadable MP4 format found.",
+        });
       }
       res.setHeader(
         "Content-Disposition",
@@ -84,7 +110,7 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
       ytdl(url, { format: finalFormat }).pipe(res);
     }
   } catch (error) {
-    // Handle 429 errors from YouTube specifically
+    // Handle YouTube rate limiting
     if (error.status === 429) {
       return res.status(429).json({
         success: false,
