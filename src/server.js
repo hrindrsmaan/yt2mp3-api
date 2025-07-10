@@ -1,3 +1,5 @@
+// Security best practice: load proxy credentials from environment variables
+
 // Disable ytdl-core update checks
 process.env.YTDL_NO_UPDATE = "1";
 
@@ -6,11 +8,20 @@ import cors from "cors";
 import helmet from "helmet";
 import ytdl from "@distube/ytdl-core";
 import rateLimit from "express-rate-limit";
-import { HttpsProxyAgent } from "https-proxy-agent";
-import { Dispatcher } from "undici";
+import { ProxyAgent } from "undici";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+const oxylabsUsername = "hxmaan_fPQba";
+const oxylabsPassword = "H+r1ndersingh";
+
+if (!oxylabsUsername || !oxylabsPassword) {
+  throw new Error("Proxy credentials are not set in environment variables.");
+}
+
+const proxyUrl = `http://${oxylabsUsername}:${oxylabsPassword}@pr.oxylabs.io:7777`;
+const proxyAgent = new ProxyAgent(proxyUrl);
 
 app.set("trust proxy", 1);
 app.use(helmet());
@@ -23,17 +34,6 @@ const downloadLimiter = rateLimit({
   message: {
     success: false,
     error: "Too many download requests from this IP, please try again later.",
-  },
-});
-
-// Oxylabs Proxy Configuration
-const oxylabsUsername = "hxmaan_fPQba"; // replace with your Oxylabs username
-const oxylabsPassword = "H+r1ndersingh"; // replace with your Oxylabs password
-const proxyUrl = `http://${oxylabsUsername}:${oxylabsPassword}@pr.oxylabs.io:7777`;
-const agent = new HttpsProxyAgent(proxyUrl);
-const proxyClient = new Dispatcher({
-  connect(origin, opts, handler) {
-    return agent;
   },
 });
 
@@ -52,10 +52,7 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
   }
 
   try {
-    const info = await ytdl.getInfo(url, {
-      client: proxyClient,
-    });
-
+    const info = await ytdl.getInfo(url, { client: proxyAgent });
     const videoTitle = info.videoDetails.title
       .replace(/[^\x00-\x7F]/g, "")
       .replace(/[\\/:*?"<>|]/g, "");
@@ -78,7 +75,7 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
       res.setHeader("Content-Type", "audio/mpeg");
       ytdl(url, {
         format: audioFormat,
-        client: proxyClient,
+        client: proxyAgent,
       }).pipe(res);
     } else {
       let finalFormat = ytdl.chooseFormat(info.formats, {
@@ -105,7 +102,7 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
       res.setHeader("Content-Type", "video/mp4");
       ytdl(url, {
         format: finalFormat,
-        client: proxyClient,
+        client: proxyAgent,
       }).pipe(res);
     }
   } catch (error) {
@@ -118,7 +115,7 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
     console.error("Error in API route:", error.message);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error.message || "Internal Server Error",
     });
   }
 });
