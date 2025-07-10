@@ -1,36 +1,16 @@
-// server.js
-// This is your standalone backend, now using ES6 modules and Helmet.
-
-// --- Setup Instructions ---
-// 1. Create a new directory for this server.
-// 2. Run `npm init -y`.
-// 3. In your package.json, add the line: "type": "module"
-// 4. Install dependencies: `npm install express cors helmet @distube/ytdl-core`
-// 5. Save this code as server.js.
-// 6. Deploy this directory to a service like Render.
-
 import express from "express";
 import cors from "cors";
-import helmet from "helmet"; // Import helmet
+import helmet from "helmet";
 import ytdl from "@distube/ytdl-core";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// --- Middleware ---
-
-// Use Helmet to set various security-related HTTP headers
 app.use(helmet());
 
-// In production, you should restrict the origin to your Vercel domain
-// for better security.
-// Example: app.use(cors({ origin: 'https://your-frontend-app.vercel.app' }));
 app.use(cors());
 
-// Middleware to parse JSON request bodies
 app.use(express.json());
-
-// --- Routes ---
 
 app.get("/", (req, res) => {
   res.send("YouTube Downloader Backend is running!");
@@ -115,5 +95,5 @@ app.post("/api/download", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on PORT ${PORT}`);
 });
