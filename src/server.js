@@ -6,25 +6,34 @@ import cors from "cors";
 import helmet from "helmet";
 import ytdl from "@distube/ytdl-core";
 import rateLimit from "express-rate-limit";
-// import fs from "fs"; // Uncomment if you want to load cookies from a file
+import { HttpsProxyAgent } from "https-proxy-agent";
+import { Dispatcher } from "undici";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Trust first proxy (for correct IP detection behind load balancers)
 app.set("trust proxy", 1);
-
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Rate limiter for download endpoint
 const downloadLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // limit each IP to 10 requests per window
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   message: {
     success: false,
     error: "Too many download requests from this IP, please try again later.",
+  },
+});
+
+// Oxylabs Proxy Configuration
+const oxylabsUsername = "hxmaan_fPQba"; // replace with your Oxylabs username
+const oxylabsPassword = "H+r1ndersingh"; // replace with your Oxylabs password
+const proxyUrl = `http://${oxylabsUsername}:${oxylabsPassword}@pr.oxylabs.io:7777`;
+const agent = new HttpsProxyAgent(proxyUrl);
+const proxyClient = new Dispatcher({
+  connect(origin, opts, handler) {
+    return agent;
   },
 });
 
@@ -43,25 +52,9 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
   }
 
   try {
-    // === Proxy and/or Cookies Support (Uncomment and configure as needed) ===
-    // const agent = ytdl.createProxyAgent({ uri: "http://my.proxy.server:8080" });
-    // const cookies = [
-    //   { name: "cookie1", value: "COOKIE1_HERE" },
-    //   // ...more cookies as needed
-    // ];
-    // const agent = ytdl.createAgent(cookies); // For cookies only
-    // Or combine proxy and cookies:
-    // const agent = ytdl.createProxyAgent({ uri: "http://my.proxy.server:8080" }, cookies);
-
-    // To load cookies from a file (cookies.json):
-    // const cookies = JSON.parse(fs.readFileSync("cookies.json"));
-    // const agent = ytdl.createAgent(cookies);
-
-    // Use agent in getInfo if you set it up above:
-    // const info = await ytdl.getInfo(url, { agent });
-
-    // Default: no proxy/cookies
-    const info = await ytdl.getInfo(url);
+    const info = await ytdl.getInfo(url, {
+      client: proxyClient,
+    });
 
     const videoTitle = info.videoDetails.title
       .replace(/[^\x00-\x7F]/g, "")
@@ -83,7 +76,10 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
         `attachment; filename="${videoTitle}.mp3"`
       );
       res.setHeader("Content-Type", "audio/mpeg");
-      ytdl(url, { format: audioFormat }).pipe(res);
+      ytdl(url, {
+        format: audioFormat,
+        client: proxyClient,
+      }).pipe(res);
     } else {
       let finalFormat = ytdl.chooseFormat(info.formats, {
         quality: "highest",
@@ -107,10 +103,12 @@ app.post("/api/download", downloadLimiter, async (req, res) => {
         `attachment; filename="${videoTitle}.mp4"`
       );
       res.setHeader("Content-Type", "video/mp4");
-      ytdl(url, { format: finalFormat }).pipe(res);
+      ytdl(url, {
+        format: finalFormat,
+        client: proxyClient,
+      }).pipe(res);
     }
   } catch (error) {
-    // Handle YouTube rate limiting
     if (error.status === 429) {
       return res.status(429).json({
         success: false,
