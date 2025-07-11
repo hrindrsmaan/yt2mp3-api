@@ -16,9 +16,9 @@ if (!oxylabsUsername || !oxylabsPassword) {
 
 //const proxyUrl = `http://customer-${oxylabsUsername}-sessid-0469279611-sesstime-10:${oxylabsPassword}@pr.oxylabs.io:7777`;
 
-const proxyUrl = `http://customer-${oxylabsUsername}:${oxylabsPassword}@pr.oxylabs.io:7777`;
+//const proxyUrl = `http://customer-${oxylabsUsername}:${oxylabsPassword}@pr.oxylabs.io:7777`;
 
-const proxyAgent = ytdl.createProxyAgent({ uri: proxyUrl });
+//const proxyAgent = ytdl.createProxyAgent({ uri: proxyUrl });
 
 app.use(helmet());
 app.use(cors());
@@ -48,7 +48,7 @@ app.post("/api/download", async (req, res) => {
   }
 
   try {
-    const info = await ytdl.getInfo(url, { agent: proxyAgent });
+    const info = await ytdl.getInfo(url);
     const videoTitle = info.videoDetails.title
       .replace(/[^\x00-\x7F]/g, "")
       .replace(/[\\/:*?"<>|]/g, "");
@@ -96,10 +96,7 @@ app.post("/api/download", async (req, res) => {
         `attachment; filename="${videoTitle}.mp4"`
       );
       res.setHeader("Content-Type", "video/mp4");
-      ytdl(url, {
-        format: finalFormat,
-        agent: proxyAgent,
-      }).pipe(res);
+      ytdl(url).pipe(res);
     }
   } catch (error) {
     if (error.status === 429) {
