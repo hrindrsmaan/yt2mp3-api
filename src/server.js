@@ -74,27 +74,24 @@ app.post("/api/download", async (req, res) => {
         client: proxyAgent,
       }).pipe(res);
     } else {
-      let finalFormat = ytdl.chooseFormat(info.formats, {
-        quality: "highest",
-        filter: (format) =>
-          format.hasVideo && format.hasAudio && format.container === "mp4",
-      });
-      if (!finalFormat) {
-        finalFormat = ytdl.chooseFormat(info.formats, {
-          quality: "highestvideo",
-          filter: (format) => format.container === "mp4",
-        });
-      }
-      if (!finalFormat) {
-        return res.status(404).json({
-          success: false,
-          error: "No downloadable MP4 format found.",
-        });
-      }
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${videoTitle}.mp4"`
-      );
+      // let finalFormat = ytdl.chooseFormat(info.formats, {
+      //   quality: "highest",
+      //   filter: (format) =>
+      //     format.hasVideo && format.hasAudio && format.container === "mp4",
+      // });
+      // if (!finalFormat) {
+      //   finalFormat = ytdl.chooseFormat(info.formats, {
+      //     quality: "highestvideo",
+      //     filter: (format) => format.container === "mp4",
+      //   });
+      // }
+      // if (!finalFormat) {
+      //   return res.status(404).json({
+      //     success: false,
+      //     error: "No downloadable MP4 format found.",
+      //   });
+      // }
+      res.setHeader("Content-Disposition", `attachment; filename="video.mp4"`);
       res.setHeader("Content-Type", "video/mp4");
       ytdl(url).pipe(res);
     }
